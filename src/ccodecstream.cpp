@@ -23,10 +23,14 @@
 // ----------------------------------------------------------------------------
 
 #include "main.h"
+
 #include <string.h>
+
 #include "ccodecstream.h"
 #include "cdvframepacket.h"
 #include "creflector.h"
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // define
@@ -36,95 +40,86 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // constructor
 
-CCodecStream::CCodecStream(CPacketStream *PacketStream, uint16 uiId, uint8 uiCodecIn, uint8 uiCodecOut)
-{
-    m_bStopThread = false;
-    m_pThread = NULL;
-    m_uiStreamId = uiId;
-    m_uiPid = 0;
-    m_uiCodecIn = uiCodecIn;
-    m_uiCodecOut = uiCodecOut;
-    m_bConnected = false;
-    m_fPingMin = -1;
-    m_fPingMax = -1;
-    m_fPingSum = 0;
-    m_fPingCount = 0;
-    m_uiTotalPackets = 0;
-    m_uiTimeoutPackets = 0;
-    m_PacketStream = PacketStream;
+CCodecStream::CCodecStream(CPacketStream *PacketStream, uint16 uiId, uint8 uiCodecIn, uint8 uiCodecOut) {
+	m_bStopThread = false;
+	m_pThread = NULL;
+	m_uiStreamId = uiId;
+	m_uiPid = 0;
+	m_uiCodecIn = uiCodecIn;
+	m_uiCodecOut = uiCodecOut;
+	m_bConnected = false;
+	m_fPingMin = -1;
+	m_fPingMax = -1;
+	m_fPingSum = 0;
+	m_fPingCount = 0;
+	m_uiTotalPackets = 0;
+	m_uiTimeoutPackets = 0;
+	m_PacketStream = PacketStream;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // destructor
 
-CCodecStream::~CCodecStream()
-{
-    // close socket
-    m_Socket.Close();
-    
-    // kill threads
-    m_bStopThread = true;
-    if ( m_pThread != NULL )
-    {
-        m_pThread->join();
-        delete m_pThread;
-    }
-    
-    // empty local queue
-    while ( !m_LocalQueue.empty() )
-    {
-        delete m_LocalQueue.front();
-        m_LocalQueue.pop();
-    }
-    // empty ourselves
-    while ( !empty() )
-    {
-        delete front();
-        pop();
-    }
+CCodecStream::~CCodecStream() {
+	// close socket
+	m_Socket.Close();
+
+	// kill threads
+	m_bStopThread = true;
+	if (m_pThread != NULL) {
+		m_pThread->join();
+		delete m_pThread;
+	}
+
+	// empty local queue
+	while (!m_LocalQueue.empty()) {
+		delete m_LocalQueue.front();
+		m_LocalQueue.pop();
+	}
+
+	// empty ourselves
+	while (!empty()) {
+		delete front();
+		pop();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // initialization
 
-bool CCodecStream::Init(uint16 uiPort)
-{
-    bool ok;
-    
-    // reset stop flag
-    m_bStopThread = false;
-    
-    // create server's IP
-    m_Ip = g_Reflector.GetTranscoderIp();
-    m_uiPort = uiPort;
-    
-    // create our socket
-    ok = m_Socket.Open(uiPort);
-    if ( ok )
-    {
-        // init timers
-        m_TimeoutTimer.Now();
-        
-        // start  thread;
-        m_pThread = new std::thread(CCodecStream::Thread, this);
-        m_bConnected = true;
-    }
-    else
-    {
-        std::cout << "Error opening socket on port UDP" << uiPort << " on ip " << g_Reflector.GetListenIp() << std::endl;
-        m_bConnected = false;
-    }
-    
-    // done
-    return ok;
+bool CCodecStream::Init(uint16 uiPort) {
+	bool ok;
+
+	// reset stop flag
+	m_bStopThread = false;
+
+	// create server's IP
+	m_Ip = g_Reflector.GetTranscoderIp();
+	m_uiPort = uiPort;
+
+	// create our socket
+	ok = m_Socket.Open(uiPort);
+	if (ok) {
+		// init timers
+		m_TimeoutTimer.Now();
+
+		// start  thread;
+		m_pThread = new std::thread(CCodecStream::Thread, this);
+		m_bConnected = true;
+	} else {
+		std::cout << "Error opening socket on port UDP" << uiPort << " on ip " << g_Reflector.GetListenIp() << std::endl;
+		m_bConnected = false;
+	}
+
+	// done
+	return (ok);
 }
 
-void CCodecStream::Close(void)
-{
+void CCodecStream::Close(void) {
     // close socket
     m_bConnected = false;
     m_Socket.Close();
-    
+
     // kill threads
     m_bStopThread = true;
     if ( m_pThread != NULL )
@@ -160,7 +155,7 @@ void CCodecStream::Task(void)
     CIp     Ip;
     uint8   Ambe[AMBE_SIZE];
     uint8   DStarSync[] = { 0x55,0x2D,0x16 };
-    
+
     // any packet from transcoder
     if ( m_Socket.Receive(&Buffer, &Ip, 5) != -1 )
     {
@@ -169,24 +164,24 @@ void CCodecStream::Task(void)
         {
             // tickle
             m_TimeoutTimer.Now();
-            
+
             // update statistics
             double ping = m_StatsTimer.DurationSinceNow();
             if ( m_fPingMin == -1 )
             {
                 m_fPingMin = ping;
                 m_fPingMax = ping;
-                
+
             }
             else
             {
                 m_fPingMin = MIN(m_fPingMin, ping);
                 m_fPingMax = MAX(m_fPingMax, ping);
-                
+
             }
             m_fPingSum += ping;
             m_fPingCount += 1;
-            
+
             // pop the original packet
             if ( !m_LocalQueue.empty() )
             {
@@ -211,14 +206,13 @@ void CCodecStream::Task(void)
             }
          }
     }
-    
+
     // anything in our queue
-    while ( !empty() )
-    {
+    while (!empty()) {
         // yes, pop it from queue
         CPacket *Packet = front();
         pop();
-        
+
         // yes, send to ambed
         // this assume that thread pushing the Packet
         // have verified that the CodecStream is connected
@@ -227,14 +221,13 @@ void CCodecStream::Task(void)
         m_uiTotalPackets++;
         EncodeAmbePacket(&Buffer, ((CDvFramePacket *)Packet)->GetAmbe(m_uiCodecIn));
         m_Socket.Send(Buffer, m_Ip, m_uiPort);
-       
+
         // and push to our local queue
         m_LocalQueue.push(Packet);
     }
-    
+
     // handle timeout
-    if ( !m_LocalQueue.empty() && (m_TimeoutTimer.DurationSinceNow() >= (TRANSCODER_AMBEPACKET_TIMEOUT/1000.0f)) )
-    {
+    if (!m_LocalQueue.empty() && (m_TimeoutTimer.DurationSinceNow() >= (TRANSCODER_AMBEPACKET_TIMEOUT / 1000.0f))) {
         //std::cout << "ambed packet timeout" << std::endl;
         m_uiTimeoutPackets++;
     }
@@ -243,25 +236,23 @@ void CCodecStream::Task(void)
 ////////////////////////////////////////////////////////////////////////////////////////
 /// packet decoding helpers
 
-bool CCodecStream::IsValidAmbePacket(const CBuffer &Buffer, uint8 *Ambe)
-{
-    bool valid = false;
-    
-    if ( (Buffer.size() == 11) && (Buffer.data()[0] == m_uiCodecOut) )
-    {
-        ::memcpy(Ambe, &(Buffer.data()[2]), 9);
-        valid = true;
-    }
-    return valid;
+bool CCodecStream::IsValidAmbePacket(const CBuffer &Buffer, uint8 *Ambe) {
+	bool valid = false;
+
+	if ((Buffer.size() == 11) && (Buffer.data()[0] == m_uiCodecOut)) {
+		::memcpy(Ambe, &(Buffer.data()[2]), 9);
+		valid = true;
+	}
+
+	return (valid);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// packet encoding helpers
 
-void CCodecStream::EncodeAmbePacket(CBuffer *Buffer, const uint8 *Ambe)
-{
-    Buffer->clear();
-    Buffer->Append(m_uiCodecIn);
-    Buffer->Append(m_uiPid);
-    Buffer->Append((uint8 *)Ambe, 9);
+void CCodecStream::EncodeAmbePacket(CBuffer *Buffer, const uint8 *Ambe) {
+	Buffer->clear();
+	Buffer->Append(m_uiCodecIn);
+	Buffer->Append(m_uiPid);
+	Buffer->Append((uint8*)Ambe, 9);
 }

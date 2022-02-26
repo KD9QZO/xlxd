@@ -29,24 +29,18 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // constructors
 
-CImrsClient::CImrsClient()
-{
+CImrsClient::CImrsClient() {
 }
 
-CImrsClient::CImrsClient(const CCallsign &callsign, const CIp &ip, char reflectorModule)
-    : CClient(callsign, ip, reflectorModule)
-{
+CImrsClient::CImrsClient(const CCallsign &callsign, const CIp &ip, char reflectorModule): CClient(callsign, ip, reflectorModule) {
 }
 
-CImrsClient::CImrsClient(const CImrsClient &client)
-    : CClient(client)
-{
+CImrsClient::CImrsClient(const CImrsClient &client): CClient(client) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // status
 
-bool CImrsClient::IsAlive(void) const
-{
-    return (m_LastKeepaliveTime.DurationSinceNow() < IMRS_KEEPALIVE_TIMEOUT);
+bool CImrsClient::IsAlive(void) const {
+	return (m_LastKeepaliveTime.DurationSinceNow() < IMRS_KEEPALIVE_TIMEOUT);
 }

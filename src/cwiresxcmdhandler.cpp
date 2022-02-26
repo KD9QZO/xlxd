@@ -37,54 +37,49 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // constructor
 
-CWiresxCmdHandler::CWiresxCmdHandler()
-{
-    m_seqNo = 0;
-    m_bStopThread = false;
-    m_pThread = NULL;
+CWiresxCmdHandler::CWiresxCmdHandler() {
+	m_seqNo = 0;
+	m_bStopThread = false;
+	m_pThread = NULL;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // destructor
 
-CWiresxCmdHandler::~CWiresxCmdHandler()
-{
-    // kill threads
-    m_bStopThread = true;
-    if ( m_pThread != NULL )
-    {
-        m_pThread->join();
-        delete m_pThread;
-    }
-    
-    // empty queue
-    m_CmdQueue.Lock();
-    while ( !m_CmdQueue.empty() )
-    {
-        m_CmdQueue.pop();
-    }
-    m_CmdQueue.Unlock();
+CWiresxCmdHandler::~CWiresxCmdHandler() {
+	// kill threads
+	m_bStopThread = true;
+	if (m_pThread != NULL) {
+		m_pThread->join();
+		delete m_pThread;
+	}
+
+	// empty queue
+	m_CmdQueue.Lock();
+	while (!m_CmdQueue.empty()) {
+		m_CmdQueue.pop();
+	}
+	m_CmdQueue.Unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // initialization
 
-bool CWiresxCmdHandler::Init(void)
-{
-    // fill our wiresx info
-    m_ReflectorWiresxInfo.SetCallsign(g_Reflector.GetCallsign());
-    m_ReflectorWiresxInfo.SetNode(g_Reflector.GetCallsign());
-    m_ReflectorWiresxInfo.SetName("Reflector");
+bool CWiresxCmdHandler::Init(void) {
+	// fill our wiresx info
+	m_ReflectorWiresxInfo.SetCallsign(g_Reflector.GetCallsign());
+	m_ReflectorWiresxInfo.SetNode(g_Reflector.GetCallsign());
+	m_ReflectorWiresxInfo.SetName("Reflector");
 
-    // reset stop flag
-    m_bStopThread = false;
+	// reset stop flag
+	m_bStopThread = false;
 
-    // start  thread;
-    m_pThread = new std::thread(CWiresxCmdHandler::Thread, this);
-    
-    // done
-    return true;
+	// start  thread;
+	m_pThread = new std::thread(CWiresxCmdHandler::Thread, this);
+
+	// done
+	return (true);
 }
 
 void CWiresxCmdHandler::Close(void)
@@ -120,7 +115,7 @@ void CWiresxCmdHandler::Task(void)
     uint32  uiNodeRxFreq;
     char cModule;
     bool bCmd;
-    
+
     // anything to do ?
     bCmd = false;
     m_CmdQueue.Lock();
@@ -142,8 +137,8 @@ void CWiresxCmdHandler::Task(void)
         }
     }
     m_CmdQueue.Unlock();
-    
-    
+
+
     // handle it
     if ( bCmd )
     {
@@ -161,7 +156,7 @@ void CWiresxCmdHandler::Task(void)
             cModule = client->GetReflectorModule();
         }
         g_Reflector.ReleaseClients();
-        
+
         // and crack the cmd
         switch ( Cmd.GetCmd() )
         {
@@ -229,100 +224,103 @@ void CWiresxCmdHandler::Task(void)
 ////////////////////////////////////////////////////////////////////////////////////////
 // packet encoding
 
-bool CWiresxCmdHandler::ReplyToWiresxDxReqPacket(const CIp &Ip, const CWiresxInfo &WiresxInfo, char Module)
-{
-    uint8 DX_RESP[] = {0x5DU, 0x51U, 0x5FU, 0x26U};
-    bool ok;
-    uint8 data[150U];
-    uint8 RoomId;
-    bool IsLinked;
-    
-    // linked module
-    // module A == 0
-    IsLinked = (Module != ' ');
-    RoomId = (uint8)(Module - 'A');
-    
-    // fill data buffer
-    ::memset(data, 0x00U, 150U);
-    ::memset(data, ' ', 128U);
-    // seq no
-    data[0U] = m_seqNo;
-    // command
-    ::memcpy(data +  1U, DX_RESP, 4U);
-    // node info
-    ::memcpy(data +  5U, WiresxInfo.GetId(), 5U);
-    ::memcpy(data + 10U, WiresxInfo.GetNode(), 10U);
-    ::memcpy(data + 20U, WiresxInfo.GetName(), 14U);
-    // linked room
-    if (!IsLinked)
-    {
-        data[34U] = '1';
-        data[35U] = '2';
-        // no room linked
-        data[57U] = '0';
-        data[58U] = '0';
-        data[59U] = '0';
-    }
-    else
-    {
-        data[34U] = '1';
-        data[35U] = '5';
-        // linked room
-        char item[16U];
-        // refl->m_id
-        ::sprintf(item, "%05d", 4001U + RoomId);
-        ::memcpy(data + 36U, item, 5U);
-        // refl->name
-        ::memset(item, ' ', 16U);
-        ::memcpy(item, "MODULE", 6U); // K2IE fix for U/C only radios
-        item[7] = 'A' + RoomId;
-        ::memcpy(data + 41U, item, 16U);
-        // refl->count
-        ::sprintf(item, "%03d", RoomId + 1);
-        ::memcpy(data + 57U, item, 3U);
-        // other
-        ::memset(data + 60U, ' ', 10U);
-        // refl->m_desc
-        ::memcpy(data + 70U, "Description   ", 14U);
-    }
+bool CWiresxCmdHandler::ReplyToWiresxDxReqPacket(const CIp &Ip, const CWiresxInfo &WiresxInfo, char Module) {
+	uint8 DX_RESP[] = { 0x5DU, 0x51U, 0x5FU, 0x26U };
+	bool ok;
+	uint8 data[150U];
+	uint8 RoomId;
+	bool IsLinked;
 
-    // frequencies
-    {
-        unsigned int offset;
-        char sign;
-        if (WiresxInfo.GetTxFrequency() >= WiresxInfo.GetRxFrequency())
-        {
-            offset = WiresxInfo.GetTxFrequency() - WiresxInfo.GetRxFrequency();
-            sign = '-';
-        }
-        else
-        {
-            offset = WiresxInfo.GetRxFrequency() - WiresxInfo.GetTxFrequency();
-            sign = '+';
-        }
-        unsigned int freqHz = WiresxInfo.GetTxFrequency() % 1000000U;
-        unsigned int freqkHz = (freqHz + 500U) / 1000U;
+	// linked module
+	// module A == 0
+	IsLinked = (Module != ' ');
+	RoomId = (uint8)(Module - 'A');
 
-        char freq[30U];
-        ::sprintf(freq, "%05u.%03u000%c%03u.%06u",
-               WiresxInfo.GetTxFrequency() / 1000000U,
-               freqkHz, sign, offset / 1000000U, offset % 1000000U);
-        
-        ::memcpy(data + 84U, freq, 23U);
-    }
+	// fill data buffer
+	::memset(data, 0x00U, 150U);
+	::memset(data, ' ', 128U);
 
-    // EOD & CRC
-    data[127U] = 0x03U;
-    data[128U] = CCRC::addCRC(data, 128U);
+	// seq no
+	data[0U] = m_seqNo;
 
-    // and encode the reply
-    CBuffer Data;
-    Data.Set(data, 129U);
-    ok = EncodeAndSendWiresxPacket(Ip, Data, WiresxInfo);
+	// command
+	::memcpy(data +  1U, DX_RESP, 4U);
 
-    // done
-    m_seqNo++;
-    return ok;
+	// node info
+	::memcpy(data +  5U, WiresxInfo.GetId(), 5U);
+	::memcpy(data + 10U, WiresxInfo.GetNode(), 10U);
+	::memcpy(data + 20U, WiresxInfo.GetName(), 14U);
+
+	// linked room
+	if (!IsLinked) {
+		data[34U] = '1';
+		data[35U] = '2';
+		// no room linked
+		data[57U] = '0';
+		data[58U] = '0';
+		data[59U] = '0';
+	} else {
+		data[34U] = '1';
+		data[35U] = '5';
+
+		// linked room
+		char item[16U];
+
+		// refl->m_id
+		::sprintf(item, "%05d", 4001U + RoomId);
+		::memcpy(data + 36U, item, 5U);
+
+		// refl->name
+		::memset(item, ' ', 16U);
+		::memcpy(item, "MODULE", 6U); // K2IE fix for U/C only radios
+		item[7] = 'A' + RoomId;
+		::memcpy(data + 41U, item, 16U);
+
+		// refl->count
+		::sprintf(item, "%03d", RoomId + 1);
+		::memcpy(data + 57U, item, 3U);
+
+		// other
+		::memset(data + 60U, ' ', 10U);
+
+		// refl->m_desc
+		::memcpy(data + 70U, "Description   ", 14U);
+	}
+
+	// frequencies
+	{
+		unsigned int offset;
+		char sign;
+
+		if (WiresxInfo.GetTxFrequency() >= WiresxInfo.GetRxFrequency()) {
+			offset = WiresxInfo.GetTxFrequency() - WiresxInfo.GetRxFrequency();
+			sign = '-';
+		} else {
+			offset = WiresxInfo.GetRxFrequency() - WiresxInfo.GetTxFrequency();
+			sign = '+';
+		}
+		unsigned int freqHz = WiresxInfo.GetTxFrequency() % 1000000U;
+		unsigned int freqkHz = (freqHz + 500U) / 1000U;
+
+		char freq[30U];
+		::sprintf(freq, "%05u.%03u000%c%03u.%06u", WiresxInfo.GetTxFrequency() / 1000000U, freqkHz, sign, offset / 1000000U, offset % 1000000U);
+
+		::memcpy(data + 84U, freq, 23U);
+	}
+
+	// EOD & CRC
+	data[127U] = 0x03U;
+	data[128U] = CCRC::addCRC(data, 128U);
+
+	// and encode the reply
+	CBuffer Data;
+	Data.Set(data, 129U);
+	ok = EncodeAndSendWiresxPacket(Ip, Data, WiresxInfo);
+
+	// done
+	m_seqNo++;
+
+	return (ok);
 }
 
 bool CWiresxCmdHandler::ReplyToWiresxAllReqPacket(const CIp &Ip, const CWiresxInfo &WiresxInfo, int Start)
@@ -330,7 +328,7 @@ bool CWiresxCmdHandler::ReplyToWiresxAllReqPacket(const CIp &Ip, const CWiresxIn
     bool ok = false;
     uint8 ALL_RESP[]  = {0x5DU, 0x46U, 0x5FU, 0x29U};
     uint8 data[1100U];
-    
+
     // fill data buffer
     ::memset(data, 0x00U, 1100U);
     // seq no
@@ -358,7 +356,7 @@ bool CWiresxCmdHandler::ReplyToWiresxAllReqPacket(const CIp &Ip, const CWiresxIn
         char item[16U];
         // module A == 0
         int RoomId = i + Start;
-        
+
         // prepare
         ::memset(data + offset, ' ', 50U);
         data[offset + 0U] = '5';
@@ -394,18 +392,18 @@ bool CWiresxCmdHandler::ReplyToWiresxAllReqPacket(const CIp &Ip, const CWiresxIn
         uint k = 1029U - offset2;
         ::memset(data+offset2, ' ', k);
         offset2 += k;
-        
+
         // EOD + CRC
         data[offset2 + 0U] = 0x03U;
         data[offset2 + 1U] = CCRC::addCRC(data, offset2 + 1U);
         offset2 += 2U;
-        
+
         // and encode the reply
         CBuffer Data;
         Data.Set(data, offset2 + 2U);
         ok = EncodeAndSendWiresxPacket(Ip, Data, WiresxInfo);
     }
-    
+
 
     // and next repeat with normal frame
     {
@@ -418,7 +416,7 @@ bool CWiresxCmdHandler::ReplyToWiresxAllReqPacket(const CIp &Ip, const CWiresxIn
         //uint k = 1031U - offset;
         //::memset(data+offset, ' ', k);
         //offset += k;
-        
+
         // and encode the reply
         CBuffer Data;
         Data.Set(data, offset + 2U);
@@ -441,11 +439,11 @@ bool CWiresxCmdHandler::ReplyToWiresxConnReqPacket(const CIp &Ip, const CWiresxI
     // linked room
     // Module A == 0
     RoomId = (uint8)(Module - 'A');
-    
+
     // prepare buffer
     ::memset(data, 0x00U, 110U);
     ::memset(data, ' ', 90U);
-    
+
     // seq no
     data[0U] = m_seqNo;
     // command
@@ -499,11 +497,11 @@ bool CWiresxCmdHandler::ReplyToWiresxDiscReqPacket(const CIp &Ip, const CWiresxI
     uint8 DISC_RESP[] = {0x5DU, 0x41U, 0x5FU, 0x26U};
     bool ok = false;
     uint8 data[110U];
-    
+
     // prepare buffer
     ::memset(data, 0x00U, 110U);
     ::memset(data, ' ', 90U);
-    
+
     // seq no
     data[0U] = m_seqNo;
     // command
@@ -547,12 +545,12 @@ bool CWiresxCmdHandler::EncodeAndSendWiresxPacket(const CIp &Ip, const CBuffer &
     CYSFPayload payload;
     uint8 buffer[200U];
 
-    
+
     CBuffer Data(DataOrg);
-    
+
     // seq no
     uint8 seqNo = 0U;
-    
+
     // calculate bt and adjust length
     uint length = (uint)Data.size();
     uint8 bt = 0;
@@ -577,10 +575,10 @@ bool CWiresxCmdHandler::EncodeAndSendWiresxPacket(const CIp &Ip, const CBuffer &
     {
         Data.Append((uint8)0x20U, (int)(length - (uint)Data.size()));
     }
-    
+
     // ft
     uint8 ft = WiresxCalcFt(length, 0U);
-    
+
     // Write the header
     {
         //header
@@ -675,36 +673,53 @@ bool CWiresxCmdHandler::EncodeAndSendWiresxPacket(const CIp &Ip, const CBuffer &
         // and post it
         SendPacket(Ip, buffer);
     }
-    
+
     // done
     return true;
 }
 
 
-uint8 CWiresxCmdHandler::WiresxCalcFt(uint length, uint offset) const
-{
-    length -= offset;
-    if (length > 220U) return 7U;
-    if (length > 180U) return 6U;
-    if (length > 140U) return 5U;
-    if (length > 100U) return 4U;
-    if (length > 60U)  return 3U;
-    if (length > 20U)  return 2U;
-    return 1U;
+uint8 CWiresxCmdHandler::WiresxCalcFt(uint length, uint offset) const {
+	length -= offset;
+
+	if (length > 220U) {
+		return (7U);
+	}
+
+	if (length > 180U) {
+		return (6U);
+	}
+
+	if (length > 140U) {
+		return (5U);
+	}
+
+	if (length > 100U) {
+		return (4U);
+	}
+
+	if (length > 60U) {
+		return (3U);
+	}
+
+	if (length > 20U) {
+		return (2U);
+	}
+
+	return (1U);
 }
 
 
-void CWiresxCmdHandler::SendPacket(const CIp &Ip, uint8 *Buffer)
-{
-    //CBuffer packet(Buffer, 155);
-    //DebugTestDecodePacket(packet);
+void CWiresxCmdHandler::SendPacket(const CIp &Ip, uint8 *Buffer) {
+	//CBuffer packet(Buffer, 155);
+	//DebugTestDecodePacket(packet);
 
-    // and push in queue
-    m_PacketQueue.Lock();
-    {
-        m_PacketQueue.push(CWiresxPacket(CBuffer(Buffer, 155), Ip));
-    }
-    m_PacketQueue.Unlock();
+	// and push in queue
+	m_PacketQueue.Lock();
+	{
+		m_PacketQueue.push(CWiresxPacket(CBuffer(Buffer, 155), Ip));
+	}
+	m_PacketQueue.Unlock();
 }
 
 
@@ -712,63 +727,53 @@ void CWiresxCmdHandler::SendPacket(const CIp &Ip, uint8 *Buffer)
 // debug
 
 #ifdef DEBUG_DUMPFILE
-bool CWiresxCmdHandler::DebugTestDecodePacket(const CBuffer &Buffer)
-{
-    uint8 tag[] = { 'Y','S','F','D' };
-    static uint8 command[4098];
-    static int len;
-    CYSFFICH Fich;
-    CYSFPayload payload;
-    CBuffer dump;
-    bool valid = false;
-    
-    if ( (Buffer.size() == 155) && (Buffer.Compare(tag, sizeof(tag)) == 0) )
-    {
-        // decode YSH fich
-        if ( Fich.decode(&(Buffer.data()[40])) )
-        {
-            std::cout << (int)Fich.getDT() << ","
-                      << (int)Fich.getFI() << ","
-                      << (int)Fich.getBN() << ","
-                      << (int)Fich.getBT() << ","
-                      << (int)Fich.getFN() << ","
-                      << (int)Fich.getFT() << " : ";
-            
-            switch ( Fich.getFI() )
-            {
-                case YSF_FI_HEADER:
-                    len = 0;
-                    ::memset(command, 0x00, sizeof(command));
-                    std::cout << "Header" << std::endl;
-                    break;
-                case YSF_FI_TERMINATOR:
-                    std::cout << "Trailer" << std::endl;
-                    std::cout << "length of payload : " << len << std::endl;
-                    dump.Set(command, len);
-                    dump.DebugDump(g_Reflector.m_DebugFile);
-                    dump.DebugDumpAscii(g_Reflector.m_DebugFile);
-                    break;
-                case YSF_FI_COMMUNICATIONS:
-                    if ( Fich.getDT() == YSF_DT_DATA_FR_MODE )
-                    {
-                        valid = payload.readDataFRModeData1(&(Buffer.data()[35]), command + len);
-                        len += 20;
-                        valid &= payload.readDataFRModeData2(&(Buffer.data()[35]), command + len);
-                        len += 20;
-                        std::cout << "decoded ok" << std::endl;
-                    }
-                    break;
-            }
-        }
-        else
-        {
-            std::cout << "invalid fich in packet" << std::endl;
-        }
-    }
-    else
-    {
-        std::cout << "invalid size packet" << std::endl;
-    }
-    return valid;
+bool CWiresxCmdHandler::DebugTestDecodePacket(const CBuffer &Buffer) {
+	uint8 tag[] = { 'Y','S','F','D' };
+	static uint8 command[4098];
+	static int len;
+	CYSFFICH Fich;
+	CYSFPayload payload;
+	CBuffer dump;
+	bool valid = false;
+
+	if ((Buffer.size() == 155) && (Buffer.Compare(tag, sizeof(tag)) == 0)) {
+		// decode YSH fich
+		if (Fich.decode(&(Buffer.data()[40]))) {
+			std::cout << (int)Fich.getDT() << "," << (int)Fich.getFI() << "," << (int)Fich.getBN() << "," << (int)Fich.getBT() << "," << (int)Fich.getFN() << "," << (int)Fich.getFT() << " : ";
+
+			switch (Fich.getFI()) {
+				case YSF_FI_HEADER:
+					len = 0;
+					::memset(command, 0x00, sizeof(command));
+					std::cout << "Header" << std::endl;
+					break;
+
+				case YSF_FI_TERMINATOR:
+					std::cout << "Trailer" << std::endl;
+					std::cout << "length of payload : " << len << std::endl;
+					dump.Set(command, len);
+					dump.DebugDump(g_Reflector.m_DebugFile);
+					dump.DebugDumpAscii(g_Reflector.m_DebugFile);
+					break;
+
+				case YSF_FI_COMMUNICATIONS:
+					if (Fich.getDT() == YSF_DT_DATA_FR_MODE) {
+						valid = payload.readDataFRModeData1(&(Buffer.data()[35]), command + len);
+						len += 20;
+						valid &= payload.readDataFRModeData2(&(Buffer.data()[35]), command + len);
+						len += 20;
+						std::cout << "decoded ok" << std::endl;
+					}
+					break;
+			}
+		} else {
+			std::cout << "invalid fich in packet" << std::endl;
+		}
+	} else {
+		std::cout << "invalid size packet" << std::endl;
+	}
+
+	return (valid);
 }
-#endif
+
+#endif	/* DEBUG_DUMPFILE */

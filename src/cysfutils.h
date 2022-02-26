@@ -31,23 +31,22 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // class
 
-class CYsfUtils
-{
+class CYsfUtils {
 public:
-    // constructor
-    CYsfUtils() {};
-    
-    // destructor
-    virtual ~CYsfUtils() {};
-    
-    // code / decode
-    static void DecodeVD2Vchs(uint8 *, uint8 **);
-    static void DecodeVD2Vch(uint8 *, uint8 *);
-    static void EncodeVD2Vch(uint8 *, uint8 *);
-    
+	// constructor
+	CYsfUtils() {}
+
+	// destructor
+	virtual ~CYsfUtils() {}
+
+	// code / decode
+	static void DecodeVD2Vchs(uint8 *, uint8 **);
+	static void DecodeVD2Vch(uint8 *, uint8 *);
+	static void EncodeVD2Vch(uint8 *, uint8 *);
+
 protected:
-    // data
+	// data
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
-#endif /* cysfutils_h */
+#endif	/* !cysfutils_h */
