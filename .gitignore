@@ -1,3 +1,21 @@
+#
+# .gitignore
+#
+
+## BACKUP & TEMP FILES ##
+
+*~
+*.bak
+*.tmp
+
+
+## USER-SPECIFIC FILES ##
+
+*.user
+
+
+## BUILD ARTIFACTS ##
+
 *.o
 src/xlxd
 ambed/ambed
