@@ -37,38 +37,38 @@ class CVocodecInterface
 public:
     // constructors
     CVocodecInterface();
-    
+
     // destructor
     virtual ~CVocodecInterface();
-    
+
     // initialization
     virtual bool Init(void);
-    
+
     // get
     virtual const char *GetName(void) const                     { return ""; }
-    
+
     // manage channels
     virtual int   GetNbChannels(void) const                     { return 0; }
     virtual uint8 GetChannelCodec(int) const                    { return CODEC_NONE; }
     void  AddChannel(CVocodecChannel *);
     virtual CVocodecChannel *GetChannelWithChannelIn(int)       { return NULL; }
     virtual CVocodecChannel *GetChannelWithChannelOut(int)      { return NULL; }
-    
+
     // task
     static void Thread(CVocodecInterface *);
-    virtual void Task(void) {};
+    virtual void Task(void) {}
 
     // operators
     virtual bool operator ==(const CVocodecInterface &) const   { return false; }
-        
+
 protected:
     // array of channels
     std::vector<CVocodecChannel *>  m_Channels;
-    
+
     // thread
     bool                            m_bStopThread;
     std::thread                     *m_pThread;
-    
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
