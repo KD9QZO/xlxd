@@ -22,12 +22,12 @@
 //    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 // ----------------------------------------------------------------------------
 
-#ifndef cbmclient_h
-#define cbmclient_h
-
+#ifndef CBMCLIENT_H_
+#define CBMCLIENT_H_
 
 #include "cclient.h"
 #include "cxlxclient.h"
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // define
@@ -36,30 +36,45 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // class
 
-class CBmClient : public CClient
-{
+class CBmClient: public CClient {
 public:
-    // constructors
-    CBmClient();
-    CBmClient(const CCallsign &, const CIp &, char = ' ');
-    CBmClient(const CBmClient &);
-    
-    // destructor
-    virtual ~CBmClient() {};
-    
-    // identity
-    int GetProtocol(void) const                 { return PROTOCOL_XLX; }
-    int GetProtocolRevision(void) const         { return XLX_PROTOCOL_REVISION_2; }
-    const char *GetProtocolName(void) const     { return "XLX"; }
-    int GetCodec(void) const                    { return CODEC_AMBE2PLUS; }
-    bool IsPeer(void) const                     { return true; }
-    
-    // status
-    bool IsAlive(void) const;
-    
-    // reporting
-    void WriteXml(std::ofstream &) {}
+	// constructors
+	CBmClient();
+	CBmClient(const CCallsign&, const CIp&, char = ' ');
+	CBmClient(const CBmClient&);
+
+	// destructor
+	virtual ~CBmClient() {
+	}
+
+	// identity
+	int GetProtocol(void) const {
+		return (PROTOCOL_XLX);
+	}
+
+	int GetProtocolRevision(void) const {
+		return (XLX_PROTOCOL_REVISION_2);
+	}
+
+	const char *GetProtocolName(void) const {
+		return ("XLX");
+	}
+
+	int GetCodec(void) const {
+		return (CODEC_AMBE2PLUS);
+	}
+
+	bool IsPeer(void) const {
+		return (true);
+	}
+
+	// status
+	bool IsAlive(void) const;
+
+	// reporting
+	void WriteXml(std::ofstream&) {
+	}
 };
 
-////////////////////////////////////////////////////////////////////////////////////////
-#endif /* cbmclient_h */
+
+#endif	/* !CBMCLIENT_H_ */

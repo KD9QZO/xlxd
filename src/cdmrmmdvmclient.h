@@ -22,10 +22,11 @@
 //    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 // ----------------------------------------------------------------------------
 
-#ifndef cdmrmmdvmclient_h
-#define cdmrmmdvmclient_h
+#ifndef CDMRMMDVMCLIENT_H_
+#define CDMRMMDVMCLIENT_H_
 
 #include "cclient.h"
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // define
@@ -34,27 +35,37 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // class
 
-class CDmrmmdvmClient : public CClient
-{
+class CDmrmmdvmClient: public CClient {
 public:
-    // constructors
-    CDmrmmdvmClient();
-    CDmrmmdvmClient(const CCallsign &, const CIp &, char = ' ');
-    CDmrmmdvmClient(const CDmrmmdvmClient &);
-    
-    // destructor
-    virtual ~CDmrmmdvmClient() {};
-    
-    // identity
-    int GetProtocol(void) const                 { return PROTOCOL_DMRMMDVM; }
-    const char *GetProtocolName(void) const     { return "DMRMmdvm"; }
-    int GetCodec(void) const                    { return CODEC_AMBE2PLUS; }
-    bool IsNode(void) const                     { return true; }
-    
-    // status
-    bool IsAlive(void) const;
+	// constructors
+	CDmrmmdvmClient();
+	CDmrmmdvmClient(const CCallsign&, const CIp&, char = ' ');
+	CDmrmmdvmClient(const CDmrmmdvmClient&);
+
+	// destructor
+	virtual ~CDmrmmdvmClient() {
+	}
+
+	// identity
+	int GetProtocol(void) const {
+		return (PROTOCOL_DMRMMDVM);
+	}
+
+	const char *GetProtocolName(void) const {
+		return ("DMRMmdvm");
+	}
+
+	int GetCodec(void) const {
+		return (CODEC_AMBE2PLUS);
+	}
+
+	bool IsNode(void) const {
+		return (true);
+	}
+
+	// status
+	bool IsAlive(void) const;
 };
 
-////////////////////////////////////////////////////////////////////////////////////////
 
-#endif /* cdmrmmdvmclient_h */
+#endif	/* !CDMRMMDVMCLIENT_H_ */

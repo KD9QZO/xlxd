@@ -22,8 +22,8 @@
 //    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 // ----------------------------------------------------------------------------
 
-#ifndef cdmrplusprotocol_h
-#define cdmrplusprotocol_h
+#ifndef CDMRPLUSPROTOCOL_H_
+#define CDMRPLUSPROTOCOL_H_
 
 #include "ctimepoint.h"
 #include "cprotocol.h"
@@ -31,94 +31,98 @@
 #include "cdvframepacket.h"
 #include "cdvlastframepacket.h"
 
+
 ////////////////////////////////////////////////////////////////////////////////////////
 // define
 
 // DMR Plus Module ID
-#define DMRPLUS_MODULE_ID       'B'
+#define DMRPLUS_MODULE_ID 'B'
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // class
 
-class CDmrplusStreamCacheItem
-{
+class CDmrplusStreamCacheItem {
 public:
-    CDmrplusStreamCacheItem()     { m_uiSeqId = 0x77; }
-    ~CDmrplusStreamCacheItem()    {}
-    
-    CDvHeaderPacket m_dvHeader;
-    CDvFramePacket  m_dvFrame0;
-    CDvFramePacket  m_dvFrame1;
-    
-    uint8   m_uiSeqId;
+	CDmrplusStreamCacheItem() {
+		m_uiSeqId = 0x77;
+	}
+
+	~CDmrplusStreamCacheItem() {
+	}
+
+	CDvHeaderPacket m_dvHeader;
+	CDvFramePacket m_dvFrame0;
+	CDvFramePacket m_dvFrame1;
+
+	uint8 m_uiSeqId;
 };
 
 
-class CDmrplusProtocol : public CProtocol
-{
+class CDmrplusProtocol: public CProtocol {
 public:
-    // constructor
-    CDmrplusProtocol() {};
-    
-    // destructor
-    virtual ~CDmrplusProtocol() {};
-    
-    // initialization
-    bool Init(void);
-    
-    // task
-    void Task(void);
-    
-protected:
-    // queue helper
-    void HandleQueue(void);
-    void SendBufferToClients(const CBuffer &, uint8);
-    
-    // keepalive helpers
-    void HandleKeepalives(void);
-    
-    // stream helpers
-    bool OnDvHeaderPacketIn(CDvHeaderPacket *, const CIp &);
-    
-    // packet decoding helpers
-    bool IsValidConnectPacket(const CBuffer &, CCallsign *, char *, const CIp &);
-    bool IsValidDisconnectPacket(const CBuffer &, CCallsign *, char *);
-    bool IsValidDvHeaderPacket(const CIp &, const CBuffer &, CDvHeaderPacket **);
-    bool IsValidDvFramePacket(const CIp &, const CBuffer &, CDvFramePacket **);
-    
-    // packet encoding helpers
-    void EncodeConnectAckPacket(CBuffer *);
-    void EncodeConnectNackPacket(CBuffer *);
-    bool EncodeDvHeaderPacket(const CDvHeaderPacket &, CBuffer *) const;
-    void EncodeDvPacket(const CDvHeaderPacket &, const CDvFramePacket &, const CDvFramePacket &, const CDvFramePacket &, uint8, CBuffer *) const;
-    void EncodeDvLastPacket(const CDvHeaderPacket &, const CDvFramePacket &, const CDvFramePacket &, const CDvFramePacket &, uint8, CBuffer *) const;
-    void SwapEndianess(uint8 *, int) const;
-    
-    // dmr SeqId helper
-    uint8 GetNextSeqId(uint8) const;
-    
-    // dmr DstId to Module helper
-    char DmrDstIdToModule(uint32) const;
-    uint32 ModuleToDmrDestId(char) const;
-    
-    // uiStreamId helpers
-    uint32 IpToStreamId(const CIp &) const;
-    
-    // Buffer & LC helpers
-    void AppendVoiceLCToBuffer(CBuffer *, uint32) const;
-    void AppendTerminatorLCToBuffer(CBuffer *, uint32) const;
-    void ReplaceEMBInBuffer(CBuffer *, uint8) const;
+	// constructor
+	CDmrplusProtocol() {
+	}
 
-    
+	// destructor
+	virtual ~CDmrplusProtocol() {
+	}
+
+	// initialization
+	bool Init(void);
+
+	// task
+	void Task(void);
+
 protected:
-    // for keep alive
-    CTimePoint          m_LastKeepaliveTime;
-    
-    // for queue header caches
-    std::array<CDmrplusStreamCacheItem, NB_OF_MODULES>    m_StreamsCache;
+	// queue helper
+	void HandleQueue(void);
+	void SendBufferToClients(const CBuffer&, uint8);
+
+	// keepalive helpers
+	void HandleKeepalives(void);
+
+	// stream helpers
+	bool OnDvHeaderPacketIn(CDvHeaderPacket*, const CIp&);
+
+	// packet decoding helpers
+	bool IsValidConnectPacket(const CBuffer&, CCallsign*, char*, const CIp&);
+	bool IsValidDisconnectPacket(const CBuffer&, CCallsign*, char*);
+	bool IsValidDvHeaderPacket(const CIp&, const CBuffer&, CDvHeaderPacket**);
+	bool IsValidDvFramePacket(const CIp&, const CBuffer&, CDvFramePacket**);
+
+	// packet encoding helpers
+	void EncodeConnectAckPacket(CBuffer*);
+	void EncodeConnectNackPacket(CBuffer*);
+	bool EncodeDvHeaderPacket(const CDvHeaderPacket&, CBuffer*) const;
+	void EncodeDvPacket(const CDvHeaderPacket&, const CDvFramePacket&, const CDvFramePacket&, const CDvFramePacket&, uint8, CBuffer*) const;
+	void EncodeDvLastPacket(const CDvHeaderPacket&, const CDvFramePacket&, const CDvFramePacket&, const CDvFramePacket&, uint8, CBuffer*) const;
+	void SwapEndianess(uint8*, int) const;
+
+	// dmr SeqId helper
+	uint8 GetNextSeqId(uint8) const;
+
+	// dmr DstId to Module helper
+	char DmrDstIdToModule(uint32) const;
+	uint32 ModuleToDmrDestId(char) const;
+
+	// uiStreamId helpers
+	uint32 IpToStreamId(const CIp&) const;
+
+	// Buffer & LC helpers
+	void AppendVoiceLCToBuffer(CBuffer*, uint32) const;
+	void AppendTerminatorLCToBuffer(CBuffer*, uint32) const;
+	void ReplaceEMBInBuffer(CBuffer*, uint8) const;
+
+
+protected:
+	// for keep alive
+	CTimePoint m_LastKeepaliveTime;
+
+	// for queue header caches
+	std::array<CDmrplusStreamCacheItem, NB_OF_MODULES> m_StreamsCache;
 };
 
-////////////////////////////////////////////////////////////////////////////////////////
 
-
-#endif /* cdmrplusprotocol_h */
+#endif	/* !CDMRPLUSPROTOCOL_H_ */

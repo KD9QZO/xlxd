@@ -35,155 +35,132 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // operation
 
-bool CImrsProtocol::Init(void)
-{
-    bool ok;
+bool CImrsProtocol::Init(void) {
+	bool ok;
 
-    // base class
-    ok = CProtocol::Init();
+	// base class
+	ok = CProtocol::Init();
 
-    // update the reflector callsign
-    m_ReflectorCallsign.PatchCallsign(0, (const uint8*)"IMR", 3);
+	// update the reflector callsign
+	m_ReflectorCallsign.PatchCallsign(0, (const uint8*)"IMR", 3);
 
-    // create our socket
-    ok &= m_Socket.Open(IMRS_PORT);
-    if ( !ok )
-    {
-        std::cout << "Error opening socket on port UDP" << IMRS_PORT << " on ip " << g_Reflector.GetListenIp() << std::endl;
-    }
+	// create our socket
+	ok &= m_Socket.Open(IMRS_PORT);
+	if (!ok) {
+		std::cout << "Error opening socket on port UDP" << IMRS_PORT << " on ip " << g_Reflector.GetListenIp() << std::endl;
+	}
 
-    // update time
-    m_LastKeepaliveTime.Now();
+	// update time
+	m_LastKeepaliveTime.Now();
 
-    // done
-    return ok;
+	// done
+	return (ok);
 }
 
-void CImrsProtocol::Close(void)
-{
-    // base class
-    CProtocol::Close();
+void CImrsProtocol::Close(void) {
+	// base class
+	CProtocol::Close();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // task
 
-void CImrsProtocol::Task(void)
-{
-    CBuffer             Buffer;
-    CIp                 Ip;
-    CCallsign           Callsign;
-    //CYSFFICH            Fich;
-    CDvHeaderPacket     *Header;
-    CDvFramePacket      *Frames[5];
+void CImrsProtocol::Task(void) {
+	CBuffer Buffer;
+	CIp Ip;
+	CCallsign Callsign;
+//	CYSFFICH Fich;
+	CDvHeaderPacket *Header;
+	CDvFramePacket *Frames[5];
 
-    // handle incoming packets
-    if ( m_Socket.Receive(&Buffer, &Ip, 20) != -1 )
-    {
-        // force port
-        Ip.SetPort(IMRS_PORT);
-        // crack the packet
-        if ( IsValidDvFramePacket(Ip, Buffer, Frames) )
-        {
-            //std::cout << "IMRS DV frame"  << std::endl;
+	// handle incoming packets
+	if (m_Socket.Receive(&Buffer, &Ip, 20) != -1) {
+		// force port
+		Ip.SetPort(IMRS_PORT);
 
-            // handle it
-            OnDvFramePacketIn(Frames[0], &Ip);
-            OnDvFramePacketIn(Frames[1], &Ip);
-            OnDvFramePacketIn(Frames[2], &Ip);
-            OnDvFramePacketIn(Frames[3], &Ip);
-            OnDvFramePacketIn(Frames[4], &Ip);
+		// crack the packet
+		if (IsValidDvFramePacket(Ip, Buffer, Frames)) {
+//			std::cout << "IMRS DV frame"  << std::endl;
 
-        }
-        else if ( IsValidDvHeaderPacket(Ip, Buffer, &Header) )
-        {
-            //std::cout << "IMRS DV header:"  << std::endl << *Header << std::endl;
-            //std::cout << "IMRS DV header:"  << std::endl;
+			// handle it
+			OnDvFramePacketIn(Frames[0], &Ip);
+			OnDvFramePacketIn(Frames[1], &Ip);
+			OnDvFramePacketIn(Frames[2], &Ip);
+			OnDvFramePacketIn(Frames[3], &Ip);
+			OnDvFramePacketIn(Frames[4], &Ip);
+		} else if (IsValidDvHeaderPacket(Ip, Buffer, &Header)) {
+//			std::cout << "IMRS DV header:"  << std::endl << *Header << std::endl;
+//			std::cout << "IMRS DV header:"  << std::endl;
 
-            // node linked and callsign muted?
-            if ( g_GateKeeper.MayTransmit(Header->GetMyCallsign(), Ip, PROTOCOL_IMRS, Header->GetRpt2Module())  )
-            {
-                // handle it
-                OnDvHeaderPacketIn(Header, Ip);
-            }
-            else
-            {
-                delete Header;
-            }
-        }
-        else if ( IsValidDvLastFramePacket(Ip, Buffer, Frames) )
-        {
-            //std::cout << "IMRS last DV frame"  << std::endl;
+			// node linked and callsign muted?
+			if (g_GateKeeper.MayTransmit(Header->GetMyCallsign(), Ip, PROTOCOL_IMRS, Header->GetRpt2Module())) {
+				// handle it
+				OnDvHeaderPacketIn(Header, Ip);
+			} else {
+				delete Header;
+			}
+		} else if (IsValidDvLastFramePacket(Ip, Buffer, Frames)) {
+//			std::cout << "IMRS last DV frame"  << std::endl;
 
-            // handle it
-            OnDvLastFramePacketIn((CDvLastFramePacket*)Frames[0], &Ip);
-        }
-        else if ( IsValidPingPacket(Buffer) )
-        {
-            //std::cout << "IMRS ping packet from "  << Ip << std::endl;
+			// handle it
+			OnDvLastFramePacketIn((CDvLastFramePacket*)Frames[0], &Ip);
+		} else if (IsValidPingPacket(Buffer)) {
+//			std::cout << "IMRS ping packet from "  << Ip << std::endl;
 
-            // acknowledge request
-            EncodePongPacket(&Buffer);
-            m_Socket.Send(Buffer, Ip, IMRS_PORT);
+			// acknowledge request
+			EncodePongPacket(&Buffer);
+			m_Socket.Send(Buffer, Ip, IMRS_PORT);
 
-            // our turn
-            EncodePingPacket(&Buffer);
-            m_Socket.Send(Buffer, Ip, IMRS_PORT);
-        }
-        else if ( IsValidConnectPacket(Buffer, &Callsign) )
-        {
-            //std::cout << "IMRS keepalive/connect packet from " << Callsign << " at " << Ip << std::endl;
+			// our turn
+			EncodePingPacket(&Buffer);
+			m_Socket.Send(Buffer, Ip, IMRS_PORT);
+		} else if (IsValidConnectPacket(Buffer, &Callsign)) {
+//			std::cout << "IMRS keepalive/connect packet from " << Callsign << " at " << Ip << std::endl;
 
-            // callsign authorized?
-            if ( g_GateKeeper.MayLink(Callsign, Ip, PROTOCOL_IMRS) )
-            {
-                 // add client if needed
-                CClients *clients = g_Reflector.GetClients();
-                CClient *client = clients->FindClient(Callsign, Ip, PROTOCOL_IMRS);
-                // client already connected ?
-                if ( client == NULL )
-                {
-                    std::cout << "IMRS connect packet from " << Callsign << " at " << Ip << std::endl;
+			// callsign authorized?
+			if (g_GateKeeper.MayLink(Callsign, Ip, PROTOCOL_IMRS)) {
+				 // add client if needed
+				CClients *clients = g_Reflector.GetClients();
+				CClient *client = clients->FindClient(Callsign, Ip, PROTOCOL_IMRS);
+				// client already connected ?
+				if (client == NULL) {
+					std::cout << "IMRS connect packet from " << Callsign << " at " << Ip << std::endl;
 
-                    // create the client
-                    CImrsClient *newclient = new CImrsClient(Callsign, Ip);
-                    // connect to default module
-                    newclient->SetReflectorModule(IMRS_DEFAULT_MODULE);
+					// create the client
+					CImrsClient *newclient = new CImrsClient(Callsign, Ip);
 
-                    // and append
-                    clients->AddClient(newclient);
-                }
-                else
-                {
-                    client->Alive();
-                }
-                // and done
-                g_Reflector.ReleaseClients();
-            }
-        }
-        else
-        {
-            // invalid packet
-            //std::cout << "IMRS packet (" << Buffer.size() << ") from " << Callsign << " at " << Ip << std::endl;
-            //Buffer.DebugDump(g_Reflector.m_DebugFile);
-        }
-    }
+					// connect to default module
+					newclient->SetReflectorModule(IMRS_DEFAULT_MODULE);
 
-    // handle end of streaming timeout
-    CheckStreamsTimeout();
+					// and append
+					clients->AddClient(newclient);
+				} else {
+					client->Alive();
+				}
+				// and done
+				g_Reflector.ReleaseClients();
+			}
+		} else {
+			// invalid packet
+//			std::cout << "IMRS packet (" << Buffer.size() << ") from " << Callsign << " at " << Ip << std::endl;
+//			Buffer.DebugDump(g_Reflector.m_DebugFile);
+		}
+	}
 
-    // handle queue from reflector
-    HandleQueue();
+	// handle end of streaming timeout
+	CheckStreamsTimeout();
 
-    // keep client alive
-    if ( m_LastKeepaliveTime.DurationSinceNow() > IMRS_KEEPALIVE_PERIOD )
-    {
-        //
-        HandleKeepalives();
+	// handle queue from reflector
+	HandleQueue();
 
-        // update time
-        m_LastKeepaliveTime.Now();
-    }
+	// keep client alive
+	if (m_LastKeepaliveTime.DurationSinceNow() > IMRS_KEEPALIVE_PERIOD) {
+		//
+		HandleKeepalives();
+
+		// update time
+		m_LastKeepaliveTime.Now();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -342,34 +319,30 @@ void CImrsProtocol::HandleQueue(void)
 ////////////////////////////////////////////////////////////////////////////////////////
 // keepalive helpers
 
-void CImrsProtocol::HandleKeepalives(void)
-{
-    // IMRS protocol keepalive request is client tasks
-    // here, just check that all clients are still alive
-    // and disconnect them if not
+void CImrsProtocol::HandleKeepalives(void) {
+	// IMRS protocol keepalive request is client tasks
+	// here, just check that all clients are still alive
+	// and disconnect them if not
 
-    // iterate on clients
-    CClients *clients = g_Reflector.GetClients();
-    int index = -1;
-    CClient *client = NULL;
-    while ( (client = clients->FindNextClient(PROTOCOL_IMRS, &index)) != NULL )
-    {
-        // is this client busy ?
-        if ( client->IsAMaster() )
-        {
-            // yes, just tickle it
-            client->Alive();
-        }
-        // check it's still with us
-        else if ( !client->IsAlive() )
-        {
-            // no, remove it
-            std::cout << "IMRS client " << client->GetCallsign() << " keepalive timeout" << std::endl;
-            clients->RemoveClient(client);
-        }
+	// iterate on clients
+	CClients *clients = g_Reflector.GetClients();
+	int index = -1;
+	CClient *client = NULL;
+	while ((client = clients->FindNextClient(PROTOCOL_IMRS, &index)) != NULL) {
+		// is this client busy ?
+		if (client->IsAMaster()) {
+			// yes, just tickle it
+			client->Alive();
+		}
+		// check it's still with us
+		else if (!client->IsAlive()) {
+			// no, remove it
+			std::cout << "IMRS client " << client->GetCallsign() << " keepalive timeout" << std::endl;
+			clients->RemoveClient(client);
+		}
 
-    }
-    g_Reflector.ReleaseClients();
+	}
+	g_Reflector.ReleaseClients();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -628,58 +601,64 @@ bool CImrsProtocol::IsValidDvLastFramePacket(const CIp &Ip, const CBuffer &Buffe
 ////////////////////////////////////////////////////////////////////////////////////////
 // DV packet encoding helpers
 
-void CImrsProtocol::EncodePingPacket(CBuffer *Buffer) const
-{
-    uint8 tag[] = { 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, };
+void CImrsProtocol::EncodePingPacket(CBuffer *Buffer) const {
+	uint8 tag[] = { 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, };
 
-    // tag
-    Buffer->Set(tag, sizeof(tag));
+	// tag
+	Buffer->Set(tag, sizeof(tag));
 }
 
-void CImrsProtocol::EncodePongPacket(CBuffer *Buffer) const
-{
-    uint8 tag1[] = { 0x00, 0x2C, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x00 };
-    uint8 radioid[] = { 'G', '0', 'g', 'B', 'J' };
-    char  sz[YSF_CALLSIGN_LENGTH];
+void CImrsProtocol::EncodePongPacket(CBuffer *Buffer) const {
+	uint8 tag1[] = {
+		0x00, 0x2C, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x00
+	};
+	uint8 radioid[] = { 'G', '0', 'g', 'B', 'J' };
+	char sz[YSF_CALLSIGN_LENGTH];
 
-    // tag
-    Buffer->Set(tag1, sizeof(tag1));
-    // mac address
-    Buffer->Append(g_Reflector.GetListenMac(), 6);
-    // callsign
-    ::memset(sz, ' ', sizeof(sz));
-    g_Reflector.GetCallsign().GetCallsignString(sz);
-    sz[::strlen(sz)] = ' ';
-    Buffer->Append((uint8*)sz, YSF_CALLSIGN_LENGTH);
-    // radioid
-    Buffer->Append(radioid, sizeof(radioid));
-    // list of authorised dg-id
-    // enable dg-id 2 & 10 -> 10 + NBmodules
-    uint32 dgids32 = 0x00000004;
-    uint32 mask32  = 0x00000400;
-    // modules 10->31
-    for ( int i = 0; i < (int)(MIN(NB_OF_MODULES, 22)); i++ )
-    {
-        dgids32 |= mask32;
-        mask32 = mask32 << 1;
-    }
-    Buffer->Append(LOBYTE(LOWORD(dgids32)));
-    Buffer->Append(HIBYTE(LOWORD(dgids32)));
-    Buffer->Append(LOBYTE(HIWORD(dgids32)));
-    Buffer->Append(HIBYTE(HIWORD(dgids32)));
-    // module 32->35
-    uint8 dgids8 = 0x00;
-    uint8 mask8 = 0x01;
-    for ( int i = 22; i < NB_OF_MODULES; i++ )
-    {
-        dgids8 |= mask8;
-        mask8 = mask8 << 1;
-    }
-    Buffer->Append(dgids8);
-    Buffer->Append((uint8)0x00, 12);
-    // and dg-id
-    Buffer->Append((uint8)2);
-    Buffer->Append((uint8)2);
+	// tag
+	Buffer->Set(tag1, sizeof(tag1));
+
+	// mac address
+	Buffer->Append(g_Reflector.GetListenMac(), 6);
+
+	// callsign
+	::memset(sz, ' ', sizeof(sz));
+	g_Reflector.GetCallsign().GetCallsignString(sz);
+	sz[::strlen(sz)] = ' ';
+	Buffer->Append((uint8*)sz, YSF_CALLSIGN_LENGTH);
+
+	// radioid
+	Buffer->Append(radioid, sizeof(radioid));
+
+	// list of authorised DG-ID
+	// enable DG-ID 2 & 10 -> 10 + NBmodules
+	uint32 dgids32 = 0x00000004;
+	uint32 mask32 = 0x00000400;
+
+	// modules 10->31
+	for (int i = 0; i < (int)(MIN(NB_OF_MODULES, 22)); i++) {
+		dgids32 |= mask32;
+		mask32 = (mask32 << 1);
+	}
+	Buffer->Append(LOBYTE(LOWORD(dgids32)));
+	Buffer->Append(HIBYTE(LOWORD(dgids32)));
+	Buffer->Append(LOBYTE(HIWORD(dgids32)));
+	Buffer->Append(HIBYTE(HIWORD(dgids32)));
+
+	// module 32->35
+	uint8 dgids8 = 0x00;
+	uint8 mask8 = 0x01;
+	for (int i = 22; i < NB_OF_MODULES; i++) {
+		dgids8 |= mask8;
+		mask8 = (mask8 << 1);
+	}
+	Buffer->Append(dgids8);
+	Buffer->Append((uint8)0x00, 12);
+
+	// and DG-ID
+	Buffer->Append((uint8)2);
+	Buffer->Append((uint8)2);
 }
 
 bool CImrsProtocol::EncodeDvHeaderPacket(const CDvHeaderPacket &Header, CBuffer *Buffer) const {
@@ -728,7 +707,9 @@ bool CImrsProtocol::EncodeDvHeaderPacket(const CDvHeaderPacket &Header, CBuffer 
 	Buffer->AppendAsAsciiHex(fich, 4);
 
 	// debug
-	//std::cout << "H:" << uiSid << "," << Header.GetImrsPacketFrameId() << "," << uiTime << std::endl;
+#if (defined(ENABLE_EXTRA_DEBUG_MESSAGES) && (ENABLE_EXTRA_DEBUG_MESSAGES == 1))
+	std::cout << "H:" << uiSid << "," << Header.GetImrsPacketFrameId() << "," << uiTime << std::endl;
+#endif
 
 	// header
 	Buffer->Append((uint8)' ', 60);
@@ -754,9 +735,9 @@ bool CImrsProtocol::EncodeDvHeaderPacket(const CDvHeaderPacket &Header, CBuffer 
 
 	// downlink radioid
 	// uplink radioid
-	// voip station id (relay system ID on the internet)
+	// VoIP station id (relay system ID on the internet)
 
-	//  transmission source radio id
+	// transmission source radio id
 	Buffer->ReplaceAt(31 + 55, (uint8*)"G0gBJ", 5);
 
 	// done
@@ -764,75 +745,76 @@ bool CImrsProtocol::EncodeDvHeaderPacket(const CDvHeaderPacket &Header, CBuffer 
 }
 
 
-bool CImrsProtocol::EncodeDvPacket(const CDvHeaderPacket &Header, const CDvFramePacket *DvFrames, CBuffer *Buffer) const
-{
-    uint8 tag1[] = { 0x00, 0xA5, 0x00, 0x00, 0x00, 0x00, 0x07 };
-    uint8 tag2[] = { 0x00, 0x00, 0x00, 0x00, 0x32, 0x2a, 0x2a };
+bool CImrsProtocol::EncodeDvPacket(const CDvHeaderPacket &Header, const CDvFramePacket *DvFrames, CBuffer *Buffer) const {
+	uint8 tag1[] = { 0x00, 0xA5, 0x00, 0x00, 0x00, 0x00, 0x07 };
+	uint8 tag2[] = { 0x00, 0x00, 0x00, 0x00, 0x32, 0x2A, 0x2A };
 
-    // tag1
-    Buffer->Set(tag1, sizeof(tag1));
+	// tag1
+	Buffer->Set(tag1, sizeof(tag1));
 
-    // time
-    uint32 uiTime = (uint32)DvFrames[0].GetImrsPacketFrameId() * 100;
-    Buffer->Append(LOBYTE(HIWORD(uiTime)));
-    Buffer->Append(HIBYTE(LOWORD(uiTime)));
-    Buffer->Append(LOBYTE(LOWORD(uiTime)));
+	// time
+	uint32 uiTime = (uint32)DvFrames[0].GetImrsPacketFrameId() * 100;
+	Buffer->Append(LOBYTE(HIWORD(uiTime)));
+	Buffer->Append(HIBYTE(LOWORD(uiTime)));
+	Buffer->Append(LOBYTE(LOWORD(uiTime)));
 
-     // steamid
-     uint16 uiSid = Header.GetStreamId();
-     Buffer->Append(HIBYTE(uiSid));
-     Buffer->Append(LOBYTE(uiSid));
+	// StreamID
+	uint16 uiSid = Header.GetStreamId();
+	Buffer->Append(HIBYTE(uiSid));
+	Buffer->Append(LOBYTE(uiSid));
 
-     // tag2
-     Buffer->Append(tag2, sizeof(tag2));
+	// tag2
+	Buffer->Append(tag2, sizeof(tag2));
 
-    // fid
-    uint8 fid[2];
-    fid[0] = HIBYTE(DvFrames[0].GetImrsPacketFrameId());
-    fid[1] = LOBYTE(DvFrames[0].GetImrsPacketFrameId());
-    Buffer->AppendAsAsciiHex(fid, sizeof(fid));
+	// FID
+	uint8 fid[2];
+	fid[0] = HIBYTE(DvFrames[0].GetImrsPacketFrameId());
+	fid[1] = LOBYTE(DvFrames[0].GetImrsPacketFrameId());
+	Buffer->AppendAsAsciiHex(fid, sizeof(fid));
 
-    // sub frame id
-    // todo: normally FN should be rolling from 0 to 6, but for some
-    //       reasons, if done so, the DR-2X interrupt shortly the transmission
-    //       after 1 second approx ????
-    //uint8 uiFN = (uint8)DvFrames[0].GetImrsPacketId();
-    uint8 uiFN = 0;
+	// sub frame id
+	// TODO: normally FN should be rolling from 0 to 6, but for some reasons, if done so, the DR-2X interrupt shortly
+	//       the transmission after 1 second approx ????
+//	uint8 uiFN = (uint8)DvFrames[0].GetImrsPacketId();
+	uint8 uiFN = 0;
 
-    // fich
-    CYSFFICH Fich;
-    Fich.setFI(YSF_FI_COMMUNICATIONS);
-    Fich.setCS(2U);
-    Fich.setBN(0U);
-    Fich.setBT(0U);
-    Fich.setFN(uiFN);
-    Fich.setFT(6U);
-    Fich.setDev(0U);
-    Fich.setMR(0U);
-    Fich.setDT(YSF_DT_VD_MODE2);
-    Fich.setSQL(0U);
-    Fich.setSQ(ModuleToDgid(Header.GetModuleId()));
-    uint8 fich[4];
-    Fich.data(fich);
-    Buffer->AppendAsAsciiHex(fich, 4);
+	// FICH
+	CYSFFICH Fich;
+	Fich.setFI(YSF_FI_COMMUNICATIONS);
+	Fich.setCS(2U);
+	Fich.setBN(0U);
+	Fich.setBT(0U);
+	Fich.setFN(uiFN);
+	Fich.setFT(6U);
+	Fich.setDev(0U);
+	Fich.setMR(0U);
+	Fich.setDT(YSF_DT_VD_MODE2);
+	Fich.setSQL(0U);
+	Fich.setSQ(ModuleToDgid(Header.GetModuleId()));
 
-    // debug
-    //std::cout << "F:" << uiSid << "," << DvFrames[0].GetImrsPacketFrameId() << "," << (int)DvFrames[0].GetImrsPacketId() << "," << uiTime << std::endl;
+	uint8 fich[4];
+	Fich.data(fich);
+	Buffer->AppendAsAsciiHex(fich, 4);
 
-    // todo: fill with proper content if needed
-    // dch
-    Buffer->Append((uint8*)"2A2A2A2A2A4835215245", 20);
+	// debug
+#if (defined(ENABLE_EXTRA_DEBUG_MESSAGES) && (ENABLE_EXTRA_DEBUG_MESSAGES == 1))
+	std::cout << "F:" << uiSid << "," << DvFrames[0].GetImrsPacketFrameId() << "," << (int)DvFrames[0].GetImrsPacketId() << "," << uiTime << std::endl;
+#endif
 
-    // ambe frames
-    for ( int i = 0; i < 5; i++ )
-    {
-        uint8 ambe[13];
-        CYsfUtils::EncodeVD2Vch((unsigned char*)DvFrames[i].GetAmbePlus(), ambe);
-        Buffer->AppendAsAsciiHex(ambe, 13);
-    }
+	// TODO: fill with proper content if needed
+	// DCH
+	Buffer->Append((uint8*)"2A2A2A2A2A4835215245", 20);
 
-    // done
-    return true;
+	// AMBE frames
+	for (int i = 0; i < 5; i++) {
+		uint8 ambe[13];
+
+		CYsfUtils::EncodeVD2Vch((unsigned char*)DvFrames[i].GetAmbePlus(), ambe);
+		Buffer->AppendAsAsciiHex(ambe, 13);
+	}
+
+	// done
+	return (true);
 }
 
 bool CImrsProtocol::EncodeDvLastPacket(const CDvHeaderPacket &Header, const CDvLastFramePacket &LastFrame, CBuffer *Buffer) const {
@@ -892,8 +874,10 @@ bool CImrsProtocol::EncodeDvLastPacket(const CDvHeaderPacket &Header, const CDvL
 // uiStreamId helpers
 
 uint32 CImrsProtocol::IpToStreamId(const CIp &ip) const {
-	return ip.GetAddr() ^ (uint32)(MAKEDWORD(ip.GetPort(), ip.GetPort()));
+	return (ip.GetAddr() ^ (uint32)(MAKEDWORD(ip.GetPort(), ip.GetPort())));
 }
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///// DG-ID helper
@@ -907,6 +891,7 @@ char CImrsProtocol::DgidToModule(uint8 uiDgid) const {
 
 	return (cModule);
 }
+
 uint8 CImrsProtocol::ModuleToDgid(char cModule) const {
 	uint8 uiDgid = 0x00;
 
