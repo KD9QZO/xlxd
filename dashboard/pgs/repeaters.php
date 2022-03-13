@@ -1,128 +1,121 @@
 <?php
 
 if (!isset($_SESSION['FilterCallSign'])) {
-   $_SESSION['FilterCallSign'] = null;
+	$_SESSION['FilterCallSign'] = null;
 }
 
 if (!isset($_SESSION['FilterProtocol'])) {
-   $_SESSION['FilterProtocol'] = null;
+	$_SESSION['FilterProtocol'] = null;
 }
 
 if (!isset($_SESSION['FilterModule'])) {
-   $_SESSION['FilterModule'] = null;
+	$_SESSION['FilterModule'] = null;
 }
 
 if (isset($_POST['do'])) {
-   if ($_POST['do'] == 'SetFilter') {
-    
-      if (isset($_POST['txtSetCallsignFilter'])) {
-         $_POST['txtSetCallsignFilter'] = trim($_POST['txtSetCallsignFilter']);
-         if ($_POST['txtSetCallsignFilter'] == "") {
-            $_SESSION['FilterCallSign'] = null;
-         }
-         else {
-            $_SESSION['FilterCallSign'] = $_POST['txtSetCallsignFilter'];
-            if (strpos($_SESSION['FilterCallSign'], "*") === false) {
-               $_SESSION['FilterCallSign'] = "*".$_SESSION['FilterCallSign']."*";
-            }
-         }
-    
-      }
-    
-      if (isset($_POST['txtSetProtocolFilter'])) {
-         $_POST['txtSetProtocolFilter'] = trim($_POST['txtSetProtocolFilter']);
-         if ($_POST['txtSetProtocolFilter'] == "") {
-            $_SESSION['FilterProtocol'] = null;
-         }
-         else {
-            $_SESSION['FilterProtocol'] = $_POST['txtSetProtocolFilter'];
-         }
-    
-      }
+	if ($_POST['do'] == 'SetFilter') {
+		if (isset($_POST['txtSetCallsignFilter'])) {
+			$_POST['txtSetCallsignFilter'] = trim($_POST['txtSetCallsignFilter']);
+			if ($_POST['txtSetCallsignFilter'] == "") {
+				$_SESSION['FilterCallSign'] = null;
+			} else {
+				$_SESSION['FilterCallSign'] = $_POST['txtSetCallsignFilter'];
+				if (strpos($_SESSION['FilterCallSign'], "*") === false) {
+					$_SESSION['FilterCallSign'] = "*".$_SESSION['FilterCallSign']."*";
+				}
+			}
+		}
 
-      if (isset($_POST['txtSetModuleFilter'])) {
-         $_POST['txtSetModuleFilter'] = trim($_POST['txtSetModuleFilter']);
-         if ($_POST['txtSetModuleFilter'] == "") {
-            $_SESSION['FilterModule'] = null;
-         }
-         else {
-            $_SESSION['FilterModule'] = $_POST['txtSetModuleFilter'];
-         }
-    
-      }
-   }
+		if (isset($_POST['txtSetProtocolFilter'])) {
+			$_POST['txtSetProtocolFilter'] = trim($_POST['txtSetProtocolFilter']);
+			if ($_POST['txtSetProtocolFilter'] == "") {
+				$_SESSION['FilterProtocol'] = null;
+			} else {
+				$_SESSION['FilterProtocol'] = $_POST['txtSetProtocolFilter'];
+			}
+		}
+
+		if (isset($_POST['txtSetModuleFilter'])) {
+			$_POST['txtSetModuleFilter'] = trim($_POST['txtSetModuleFilter']);
+			if ($_POST['txtSetModuleFilter'] == "") {
+				$_SESSION['FilterModule'] = null;
+			} else {
+				$_SESSION['FilterModule'] = $_POST['txtSetModuleFilter'];
+			}
+		}
+	}
 }
 
 if (isset($_GET['do'])) {
-   if ($_GET['do'] == "resetfilter") {
-      $_SESSION['FilterModule'] = null;
-      $_SESSION['FilterProtocol'] = null;
-      $_SESSION['FilterCallSign'] = null;
-   }
+	if ($_GET['do'] == "resetfilter") {
+		$_SESSION['FilterModule'] = null;
+		$_SESSION['FilterProtocol'] = null;
+		$_SESSION['FilterCallSign'] = null;
+	}
 }
-   
 
 ?>
 
 <table class="listingtable"><?php
 
 if ($PageOptions['UserPage']['ShowFilter']) {
-   echo '
- <tr>
-   <th colspan="9">
-      <table width="100%" border="0">
-         <tr>
-            <td align="left">
-               <form name="frmFilterCallSign" method="post" action="./index.php?show=repeaters">
-                  <input type="hidden" name="do" value="SetFilter" />
-                  <input type="text" class="FilterField" value="'.$_SESSION['FilterCallSign'].'" name="txtSetCallsignFilter" placeholder="Callsign" onfocus="SuspendPageRefresh();" onblur="setTimeout(ReloadPage, '.$PageOptions['PageRefreshDelay'].');" />
-                  <input type="submit" value="Apply" class="FilterSubmit" />
-               </form>
-            </td>';
-   if (($_SESSION['FilterModule'] != null) || ($_SESSION['FilterCallSign'] != null) || ($_SESSION['FilterProtocol'] != null)) {
-      echo '
-         <td><a href="./index.php?show=repeaters&do=resetfilter" class="smalllink">Disable filters</a></td>';
-   }
-   echo '            
-            <td align="right" style="padding-right:3px;">
-               <form name="frmFilterProtocol" method="post" action="./index.php?show=repeaters">
-                  <input type="hidden" name="do" value="SetFilter" />
-                  <input type="text" class="FilterField" value="'.$_SESSION['FilterProtocol'].'" name="txtSetProtocolFilter" placeholder="Protocol" onfocus="SuspendPageRefresh();" onblur="setTimeout(ReloadPage, '.$PageOptions['PageRefreshDelay'].');" />
-                  <input type="submit" value="Apply" class="FilterSubmit" />
-               </form>
-            </td>
-            <td align="right" style="padding-right:3px;">
-               <form name="frmFilterModule" method="post" action="./index.php?show=repeaters">
-                  <input type="hidden" name="do" value="SetFilter" />
-                  <input type="text" class="FilterField" value="'.$_SESSION['FilterModule'].'" name="txtSetModuleFilter" placeholder="Module" onfocus="SuspendPageRefresh();" onblur="setTimeout(ReloadPage, '.$PageOptions['PageRefreshDelay'].');" />
-                  <input type="submit" value="Apply" class="FilterSubmit" />
-               </form>
-            </td>
-      </table>
-   </th>
-</tr>';
+	echo '
+			<tr>
+				<th colspan="9">
+					<table width="100%" border="0">
+						<tr>
+							<td align="left">
+								<form name="frmFilterCallSign" method="post" action="./index.php?show=repeaters">
+									<input type="hidden" name="do" value="SetFilter" />
+									<input type="text" class="FilterField" value="'.$_SESSION['FilterCallSign'].'" name="txtSetCallsignFilter" placeholder="Callsign" onfocus="SuspendPageRefresh();" onblur="setTimeout(ReloadPage, '.$PageOptions['PageRefreshDelay'].');" />
+									<input type="submit" value="Apply" class="FilterSubmit" />
+								</form>
+							</td>';
+	if (($_SESSION['FilterModule'] != null) || ($_SESSION['FilterCallSign'] != null) || ($_SESSION['FilterProtocol'] != null)) {
+		echo '
+							<td><a href="./index.php?show=repeaters&do=resetfilter" class="smalllink">Disable filters</a></td>';
+	}
+	echo '
+							<td align="right" style="padding-right:3px;">
+								<form name="frmFilterProtocol" method="post" action="./index.php?show=repeaters">
+									<input type="hidden" name="do" value="SetFilter" />
+									<input type="text" class="FilterField" value="'.$_SESSION['FilterProtocol'].'" name="txtSetProtocolFilter" placeholder="Protocol" onfocus="SuspendPageRefresh();" onblur="setTimeout(ReloadPage, '.$PageOptions['PageRefreshDelay'].');" />
+									<input type="submit" value="Apply" class="FilterSubmit" />
+								</form>
+							</td>
+							<td align="right" style="padding-right:3px;">
+								<form name="frmFilterModule" method="post" action="./index.php?show=repeaters">
+									<input type="hidden" name="do" value="SetFilter" />
+									<input type="text" class="FilterField" value="'.$_SESSION['FilterModule'].'" name="txtSetModuleFilter" placeholder="Module" onfocus="SuspendPageRefresh();" onblur="setTimeout(ReloadPage, '.$PageOptions['PageRefreshDelay'].');" />
+									<input type="submit" value="Apply" class="FilterSubmit" />
+								</form>
+							</td>
+						</tr>
+					</table>
+				</th>
+			</tr>';
 }
 
 
 ?>
- <tr>
-   <th width="25">#</th>
-   <th width="60">Flag</th>
-   <th width="100">DV Station</th>
-   <th width="75">Band</th>
-   <th width="150">Last Heard</th>
-   <th width="150">Linked for</th>
-   <th width="90">Protocol</th>
-   <th width="65">Module</th><?php
+	<tr>
+		<th width="25">#</th>
+		<th width="60">Flag</th>
+		<th width="100">DV Station</th>
+		<th width="75">Band</th>
+		<th width="150">Last Heard</th>
+		<th width="150">Linked for</th>
+		<th width="90">Protocol</th>
+		<th width="65">Module</th><?php
 
-if ($PageOptions['RepeatersPage']['IPModus'] != 'HideIP') {
-   echo '
-   <th width="125">IP</th>';
-}
+		if ($PageOptions['RepeatersPage']['IPModus'] != 'HideIP') {
+			echo '
+					<th width="125">IP</th>';
+		}
 
-?>
- </tr>
-<?php
+		?>
+	</tr>
+	<?php
 
 $odd = "";
 $Reflector->LoadFlags();
@@ -154,7 +147,7 @@ for ($i=0;$i<$Reflector->NodeCount();$i++) {
 
    if ($ShowThisStation) {
       if ($odd == "#FFFFFF") { $odd = "#F1FAFA"; } else { $odd = "#FFFFFF"; }
-   
+
       echo '
      <tr height="30" bgcolor="'.$odd.'" onMouseOver="this.bgColor=\'#FFFFCA\';" onMouseOut="this.bgColor=\''.$odd.'\';">
       <td align="center">'.($i+1).'</td>
